@@ -103,66 +103,65 @@ const Page = () => {
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
+    // 使用新的 gsap.matchMedia API
+    const mm = gsap.matchMedia();
+
     // 為每個區塊創建動畫
     sectionRefs.current.forEach((section, index) => {
       if (!section) return;
 
-      // 計算每個區塊在左上角的偏移位置，形成堆疊效果
-      const cardSize = 150; // 縮小後的卡片大小（px）
-      const padding = 30; // 左上角的內邊距
-      const stackOffset = index * 20; // 每個卡片的堆疊偏移
+      const cardSize = 150;
+      const padding = 15;
+      const paddingY = -25;
+      const stackOffset = index * 10;
 
-      // 計算縮放比例
       const finalScale = cardSize / window.innerWidth;
-
-      // 計算最終位置（從中心移動到左上角）
       const finalX =
         -(window.innerWidth / 2) + cardSize / 2 + padding + stackOffset;
       const finalY =
-        -(window.innerHeight / 2) + cardSize / 2 + padding + stackOffset;
+        -(window.innerHeight / 2) + cardSize / 2 + paddingY + stackOffset;
 
-      // 使用 matchMedia 確保動畫正確初始化
-      ScrollTrigger.matchMedia({
-        // 所有螢幕尺寸
-        all: () => {
-          // 創建時間軸動畫
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              endTrigger: document.body, // 使用整個 body 作為結束觸發器
-              end: "bottom bottom", // 一直持續到頁面底部
-              scrub: 1,
-              pin: true,
-              pinSpacing: false,
-              markers: false,
-              invalidateOnRefresh: true,
-            },
-          });
+      // 新的 API 寫法
+      mm.add("(min-width: 0px)", () => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            endTrigger: document.body,
+            end: "bottom bottom",
+            scrub: 1,
+            pin: true,
+            pinSpacing: false,
+            markers: false,
+            invalidateOnRefresh: true,
+          },
+        });
 
-          // 添加縮小動畫（在前 30% 完成）
-          tl.to(
-            section,
-            {
-              scale: finalScale,
-              x: finalX,
-              y: finalY,
-              borderRadius: "20px",
-              ease: "power2.out",
-              duration: 0.3,
-            },
-            0
-          );
+        tl.to(
+          section,
+          {
+            scale: finalScale,
+            x: finalX,
+            y: finalY,
+            borderRadius: "20px",
+            ease: "power2.out",
+            duration: 0.3,
+          },
+          0
+        );
 
-          // 剩餘時間保持固定
-          tl.to(section, { duration: 0.7 }, 0.3);
-        },
+        tl.to(section, { duration: 0.7 }, 0.3);
+
+        // 返回清理函數（matchMedia 會自動處理）
+        return () => {
+          tl.kill();
+        };
       });
     });
 
     // 清理函數
     return () => {
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      mm.revert(); // 新 API 的清理方式
     };
   }, []);
 
